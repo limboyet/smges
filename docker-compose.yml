@@ -1,0 +1,49 @@
+services:
+
+  mariadb:
+    image: mariadb:12.1-rc
+    container_name: mariadb
+    restart: unless-stopped
+    networks:
+      - backend
+    volumes:
+      - "/var/lib/mysql_smges:/var/lib/mysql"
+    environment:
+      MARIADB_ROOT_PASSWORD_HASH: "*7AF978EA35C72A0AC6C46C865245BB1AA1A24052"
+      MARIADB_DATABASE: "smges"
+      MARIADB_USER: "smges"
+      MARIADB_PASSWORD_HASH: "*7AF978EA35C72A0AC6C46C865245BB1AA1A24052"
+
+  api:
+    build:
+      context: .
+      dockerfile: api.dockerfile
+    container_name: smges-api
+    restart: unless-stopped
+    networks:
+      - backend
+    command: gunicorn -w 3 -t 60 -b 0.0.0.0:5000 --access-logfile '-' entrypoint:app
+    environment:
+      FLASK_DB_SERVER: mariadb
+      FLASK_DB_NAME: smges
+      FLASK_DB_USER: smges
+      FLASK_DB_PASS: smges
+
+    depends_on:
+      - mariadb
+
+  nginx:
+    image: nginx
+    container_name: nginx
+    restart: unless-stopped
+    networks:
+      - backend
+    ports:
+       - "80:80"
+      #  - "443:443"
+    volumes:
+      - "./nginx/api.conf:/etc/nginx/conf.d/api.conf"
+
+networks:
+  backend:
+    external: false
