@@ -1,6 +1,9 @@
 bcrypt==5.0.0
 Flask==3.1.2
 mysqlclient==2.2.7
+psycopg2==2.9.11
 PyJWT==2.10.1
 requests==2.32.5
 gunicorn==23.0.0
+Flask-Security==5.6.2
+Flask-Migrate==4.1.0
