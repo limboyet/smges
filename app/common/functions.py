@@ -3,6 +3,7 @@ from flask import current_app as app
 from datetime import datetime
 
 from app.common.error_handling import InvalidLogin, InvalidToken, DBConnection
+from app.common.dbmodel import User,Session,db
 
 import jwt
 import MySQLdb
@@ -22,19 +23,19 @@ def verify_token(request):
       payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
       session_id=payload['session_id']
       username=payload['username']
-      db = db_connect()
-      c = db.cursor()
-      c.execute("""SELECT id, username, last_used FROM sessions WHERE id = %s and username = %s""", (session_id,username,))
-      if c.rowcount != 1:
-        raise InvalidLogin('Authentication failed')
-      registro = c.fetchone()
-      db.close
-      if (datetime.now() - registro[2]).total_seconds() > app.config['SESSION_TIMEOUT']:
-        db = db_connect()
-        c = db.cursor()
-        c.execute("""DELETE FROM sessions WHERE id = %s and username = %s""", (session_id,username,))
-        db.close
-        raise InvalidLogin('Session expired')
+      # db = db_connect()
+      # c = db.cursor()
+      # c.execute("""SELECT id, username, last_used FROM sessions WHERE id = %s and username = %s""", (session_id,username,))
+      # if c.rowcount != 1:
+      #   raise InvalidLogin('Authentication failed')
+      # registro = c.fetchone()
+      # db.close
+      # if (datetime.now() - registro[2]).total_seconds() > app.config['SESSION_TIMEOUT']:
+      #   db = db_connect()
+      #   c = db.cursor()
+      #   c.execute("""DELETE FROM sessions WHERE id = %s and username = %s""", (session_id,username,))
+      #   db.close
+      #   raise InvalidLogin('Session expired')
       return token
   except jwt.ExpiredSignatureError:
       raise InvalidToken('Token expired')
