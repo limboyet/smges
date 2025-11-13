@@ -3,12 +3,13 @@ from flask import current_app as app
 from flask_login import LoginManager, login_user, logout_user, current_user
 from sqlalchemy.sql import func
 
-from app.common.functions import verify_token, db_connect
+from app.common.functions import check_access
 from app.common.error_handling import InvalidLogin
 from app.common.dbmodel import User,Session,db
 import jwt
 import secrets
 import bcrypt
+import logging
 
 auth_bp = Blueprint('auth_bp', __name__)
 
@@ -38,11 +39,19 @@ def login():
         raise e
 
 @auth_bp.route("/auth/logout", methods=['POST'])
+@check_access(roles = ["all"])
 def logout():
-    token_valid = verify_token(request)
-    payload = jwt.decode(token_valid, app.config['SECRET_KEY'], algorithms=['HS256'])
-    session_id=payload['session_id']
-    username=payload['username']
-    Session.query.filter_by(id=session_id).delete()
-    db.session.commit()
-    return jsonify({'message': 'Logged out successfully'}), 200
+    try:
+        # token_valid = verify_token()
+        logging.debug('/auth/logout: Start user logout with valid token')
+        token = request.headers.get('Authorization', '').split(" ")[1]
+        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+        session_id=payload['session_id']
+        # username=payload['username']
+        Session.query.filter_by(id=session_id).delete()
+        db.session.commit()
+        logging.debug('/auth/logout: session removed')
+        return jsonify({'message': 'Logged out successfully'}), 200
+    except Exception as e:
+        logging.error(e)
+        raise e

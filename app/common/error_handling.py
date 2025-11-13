@@ -15,3 +15,6 @@ class InvalidToken(AppErrorBaseClass):
 
 class DBConnection(AppErrorBaseClass):
     pass
+
+class NoAuthorizationError(AppErrorBaseClass):
+    pass

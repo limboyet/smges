@@ -22,6 +22,11 @@ class RolesUsers(db.Model):
     user_id = db.Column(db.String(20), db.ForeignKey('appuser.username'), primary_key=True)
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), primary_key=True)
 
+class RolesPermissions(db.Model):
+    __tablename__ = 'roles_permissions'
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'), primary_key=True)
+    permission_id = db.Column(db.Integer, db.ForeignKey('permission.id'), primary_key=True)
+
 class Session(db.Model):
     __tablename__ = 'session'
     id = db.Column(db.String(100), primary_key=True)
@@ -46,6 +51,12 @@ class Role(db.Model, RoleMixin):
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.String(80), unique=True, nullable=False)
     users = db.relationship('RolesUsers', backref='Role', lazy=True, cascade='all, delete-orphan')
+
+class Permission(db.Model):
+    __tablename__ = "permission"
+    id = db.Column(db.Integer(), primary_key=True)
+    name = db.Column(db.String(80), unique=True)
+    roles = db.relationship('RolesPermissions', backref='Permission', lazy=True, cascade='all, delete-orphan')
 
 class Contact(db.Model):
     __tablename__ = 'contact'
