@@ -1,13 +1,13 @@
 from flask import request
 from flask import current_app as app
 from datetime import datetime
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
+from functools import wraps
 
 from app.common.error_handling import InvalidLogin, InvalidToken, NoAuthorizationError
-from app.common.dbmodel import RolesUsers,Session,db
+from app.common.dbmodel import RolesUsers, Session, db, User, PermissionEnum
 
 import jwt
-import logging
 
 # -------------------------------------------------------------------
 # Helper functions
@@ -31,7 +31,7 @@ def verify_token():
         if not session:
             raise InvalidLogin('Invalid Session')
         if (datetime.now() - session.last_used).total_seconds() > app.config['SESSION_TIMEOUT']:
-            logging.info('Usuario ' + username + ': Sesión expirada')
+            app.logger.info('Usuario ' + username + ': Sesión expirada')
             db.session.delete(session)
             db.session.commit()
             raise InvalidLogin('Session expired')
@@ -41,25 +41,42 @@ def verify_token():
     except jwt.InvalidTokenError:
         raise InvalidToken('Invalid token')
     except Exception as e:
-        logging.error(e)
+        app.logger.error(e)
         raise e
 
 # @check_access decorator function
-def check_access(roles = []):
+def check_access(module = None):
     def decorator(f):
-        @wraps(f)
+        # @wraps(f)
         def decorator_function(*args, **kwargs):
             # calling @jwt_required()
             payload = decode_token(verify_token())
-            user_roles = RolesUsers.query.filter_by(user_id=payload['username']).all()
-            if "all" in roles:
-                return f(*args, **kwargs)
-            for role in roles:
-                if role in user_roles:
-                    logging.debug("check_access: User " + payload['username'] + " is authorized by role " + role)
-                    return f(*args, **kwargs)
-            # logging.error("check_access: User " + payload['username'] + " not authorized to access " + request.query_string)
-            logging.error("url=" + str(request.url_rule) + " User " + payload['username'] + " is not allowed.")
-            raise NoAuthorizationError("User " + payload['username'] + " is not allowed.")
+            # if not module:
+            module = str(request.url_rule).split('/')[1]
+            match request.method: 
+                case "GET":
+                    permission = PermissionEnum.Read.value[0]
+                case "POST":
+                    permission = PermissionEnum.Create.value[0]
+                case "PUT" | "PATCH":
+                    permission = PermissionEnum.Update.value[0]
+                case "DELETE":
+                    permission = PermissionEnum.Delete.value[0]
+
+            app.logger.debug("check permission " + permission + " for module: " + module)
+            user = User.query.filter_by(username=payload['username']).first()
+            app.logger.debug(user.roles)
+            allowed_perm = False
+            for role in user.roles:
+                for perm in role.permissions:
+                    app.logger.debug("Permisos: modulo " + perm.module + " permiso " + perm.permission.value[0])
+                    if (perm.module == module or perm.module == 'all') and perm.permission.value[0] == permission:
+                        allowed_perm =True
+            if not allowed_perm:
+                msg = "User " + payload['username'] + " is not allowed to " + permission + " on " + module
+                app.logger.error(msg)
+                raise NoAuthorizationError(msg)
+            app.logger.debug("User " + payload['username'] + " is allowed to " + permission + " on " + module)
+            return f(*args, **kwargs)
         return decorator_function
     return decorator

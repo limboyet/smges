@@ -9,7 +9,6 @@ from app.common.dbmodel import User,Session,db
 import jwt
 import secrets
 import bcrypt
-import logging
 
 auth_bp = Blueprint('auth_bp', __name__)
 
@@ -39,19 +38,19 @@ def login():
         raise e
 
 @auth_bp.route("/auth/logout", methods=['POST'])
-@check_access(roles = ["all"])
+@check_access()
 def logout():
     try:
         # token_valid = verify_token()
-        logging.debug('/auth/logout: Start user logout with valid token')
+        app.logger.debug('/auth/logout: Start user logout with valid token')
         token = request.headers.get('Authorization', '').split(" ")[1]
         payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
         session_id=payload['session_id']
         # username=payload['username']
         Session.query.filter_by(id=session_id).delete()
         db.session.commit()
-        logging.debug('/auth/logout: session removed')
+        app.logger.debug('/auth/logout: session removed')
         return jsonify({'message': 'Logged out successfully'}), 200
     except Exception as e:
-        logging.error(e)
+        app.logger.error(e)
         raise e
