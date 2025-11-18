@@ -45,14 +45,17 @@ def verify_token():
         raise e
 
 # @check_access decorator function
-def check_access(module = None):
+def check_access(resource = None):
     def decorator(f):
-        # @wraps(f)
+        @wraps(f)
         def decorator_function(*args, **kwargs):
             # calling @jwt_required()
             payload = decode_token(verify_token())
-            # if not module:
-            module = str(request.url_rule).split('/')[1]
+            if resource is None:
+                app.logger.error(str(request.url_rule).split('/')[1])
+                module = str(request.url_rule).split('/')[1]
+            else:
+                module = resource
             match request.method: 
                 case "GET":
                     permission = PermissionEnum.Read.value[0]
@@ -67,9 +70,10 @@ def check_access(module = None):
             user = User.query.filter_by(username=payload['username']).first()
             app.logger.debug(user.roles)
             allowed_perm = False
+            app.logger.error("Entor2")
+
             for role in user.roles:
                 for perm in role.permissions:
-                    app.logger.debug("Permisos: modulo " + perm.module + " permiso " + perm.permission.value[0])
                     if (perm.module == module or perm.module == 'all') and perm.permission.value[0] == permission:
                         allowed_perm =True
             if not allowed_perm:

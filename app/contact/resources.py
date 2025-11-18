@@ -14,7 +14,7 @@ contact_bp = Blueprint('contact_bp', __name__)
 
 @contact_bp.route("/contact", methods=['GET'], defaults={'contact_id': None})
 @contact_bp.route("/contact/<int:contact_id>/", methods=['GET'])
-@check_access("auth")
+@check_access(resource="auth")
 def get_contact(contact_id):
     return jsonify({'message': 'Solicitado ' + str(contact_id) }), 200
 
@@ -33,3 +33,8 @@ def patch_contact(contact_id):
 @contact_bp.route("/contact/<int:contact_id>", methods=['DELETE'])
 def delete_contact(contact_id):
     return jsonify({'message': 'Logged out successfully'}), 200
+
+@contact_bp.route("/contact/<int:contact_id>/rentals", methods=['GET'])
+@check_access(resource="rentals")
+def get_contact_rentals(contact_id):
+    return jsonify({'message': 'Solicitado ' + str(contact_id) }), 200
