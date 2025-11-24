@@ -1,19 +1,19 @@
-from flask import request, Blueprint, jsonify, render_template
+from flask import request, Blueprint, jsonify
 from flask import current_app as app
-from flask_login import LoginManager, login_user, logout_user, current_user
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, and_, or_
 
-from app.common.functions import check_access
-from app.common.error_handling import InvalidLogin
+from app.common.functions import verify_token, decode_token
+from app.common.error_handling import InvalidLogin,NoAuthorizationError
 from app.common.dbmodel import User,Session,db
 import jwt
 import secrets
 import bcrypt
+import json
 
 auth_bp = Blueprint('auth_bp', __name__)
 
 @auth_bp.route("/auth/login", methods=['POST'])
-def login():
+def auth_login():
     try:
         username = request.json.get('username')
         password = request.json.get('password')
@@ -23,7 +23,7 @@ def login():
         if user:
             if bcrypt.checkpw(password.encode(), user.password.encode()):
                 session_id = secrets.token_urlsafe(64)
-                token = jwt.encode({'username': username, 'session_id': session_id}, app.config['SECRET_KEY'], algorithm='HS256')
+                token = jwt.encode({'username': username, 'session_id': session_id}, app.config['SECRET_KEY'], algorithm=app.config['JWT_ALGORITHM'])
                 # login_user(user)
             else:
                 raise InvalidLogin('Authentication failed')
@@ -38,19 +38,67 @@ def login():
         raise e
 
 @auth_bp.route("/auth/logout", methods=['POST'])
-@check_access()
-def logout():
+def auth_logout():
     try:
-        # token_valid = verify_token()
-        app.logger.debug('/auth/logout: Start user logout with valid token')
-        token = request.headers.get('Authorization', '').split(" ")[1]
-        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+        token = verify_token()
+        payload = decode_token(token)
+        username=payload['username']
+        app.logger.debug(str(request.url_rule) + ': Start user ' + username + ' logout with valid token')
         session_id=payload['session_id']
-        # username=payload['username']
         Session.query.filter_by(id=session_id).delete()
         db.session.commit()
-        app.logger.debug('/auth/logout: session removed')
+        app.logger.debug(str(request.url_rule) + ': User ' + username + 'session removed')
         return jsonify({'message': 'Logged out successfully'}), 200
+    except Exception as e:
+        app.logger.error(e)
+        raise e
+
+@auth_bp.route("/auth/session", methods=['GET'], defaults={'session_id': None})
+@auth_bp.route("/auth/session/<string:session_id>/", methods=['GET'])
+def auth_sessions(session_id):
+    try:
+        token = verify_token()
+        payload = decode_token(token)
+        username=payload['username']
+        app.logger.debug(str(request.url_rule) + ': Start user ' + username + ' session query with valid token')
+        user = User.query.filter_by(username=username).first()
+        if user.is_admin:
+            if session_id is not None:
+                sessions = Session.query.filter_by(id=session_id).all()
+            else:
+                sessions = Session.query.all()
+        else:
+            if session_id is not None:
+                sessions = Session.query.filter(and_(Session.id==session_id, Session.user_id==username)).all()
+            else:
+                sessions = Session.query.filter_by(user_id=username).all()                                
+        output = {"msg": "List of sessions", "sessions": []}
+        for s in sessions:
+            output["sessions"].append({ "id": s.id, "user": s.user_id, "start": str(s.start)})
+
+        return json.dumps(output)
+    except Exception as e:
+        app.logger.error(e)
+        raise e
+
+@auth_bp.route("/auth/session/<string:session_id>/", methods=['DELETE'])
+def auth_delete_session(session_id):
+    try:
+        token = verify_token()
+        payload = decode_token(token)
+        username=payload['username']
+        app.logger.debug(str(request.url_rule) + ': Start user ' + username + ' session query with valid token')
+        user = User.query.filter_by(username=username).first()
+        session = Session.query.filter_by(id=session_id).first()
+        if user.is_admin or session.user_id == username:
+            Session.query.filter_by(id=session_id).delete()
+            db.session.commit()
+        else:
+            msg = f"User {payload['username']} is not allowed to delete session"
+            app.logger.error(msg)
+            raise NoAuthorizationError(msg)
+        output = {"msg": f"Session {session_id} deleted"}
+        return json.dumps(output)
     except Exception as e:
         app.logger.error(e)
         raise e

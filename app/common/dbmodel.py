@@ -11,11 +11,9 @@ from enum import Enum
 db = SQLAlchemy()
 migrate = Migrate()
 
-# # ---------------- Association Table for User Roles ----------------
-# roles_users = db.Table('roles_users',
-#     db.Column('user_id', db.Integer(), db.ForeignKey('user.id')),
-#     db.Column('role_id', db.Integer(), db.ForeignKey('role.id'))
-# )
+# ---------------- Helper classes ----------------
+from sqlalchemy.ext.declarative import DeclarativeMeta
+import json
 
 # ---------------- Database Models ----------------
 class RolesUsers(db.Model):
@@ -44,6 +42,7 @@ class User(db.Model):
     username = db.Column(db.String(20), primary_key=True)
     password = db.Column(db.String(255), nullable=False, server_default='')
     active = db.Column(db.Boolean(), nullable=False, default=False)
+    is_admin = db.Column(db.Boolean(), nullable=False, default=False)
     contact_id = db.Column(db.Integer, db.ForeignKey('contact.id'), nullable=False)
     fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False, default=lambda: uuid.uuid4().hex)
 
@@ -54,7 +53,7 @@ class User(db.Model):
     sessions = db.relationship('Session', back_populates='user')
     # one-to-one
     contact = db.relationship('Contact', back_populates='user')
-
+    
 class Role(db.Model):
     __tablename__ = 'role'
     id = db.Column(db.Integer(), primary_key=True)

@@ -46,6 +46,7 @@ def create_app():
     app.register_blueprint(contact_bp)
     logging.basicConfig(level=app.config['LOG_LEVEL'])
     logger = logging.getLogger(__name__)
+
     # logger.setLevel(logging.DEBUG)
     return app
 
@@ -93,7 +94,7 @@ def init_db():
     new_contact = Contact(name='Administrator', surname1='', surname2='', email='admin@example.org')
     bytes = '1234'.encode('utf-8')
     salt = bcrypt.gensalt()
-    new_user = User(username='admin', password=bcrypt.hashpw(bytes, salt), active=True, contact_id=1)
+    new_user = User(username='admin', password=bcrypt.hashpw(bytes, salt), active=True, is_admin=True, contact_id=1)
     new_role = Role(name='admin',description='Administrador')
     db.session.add_all([new_contact, new_user, new_role])
     db.session.commit()

@@ -13,7 +13,7 @@ import jwt
 # Helper functions
 # -------------------------------------------------------------------
 def decode_token(token):
-    return jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+    return jwt.decode(token, app.config['SECRET_KEY'], algorithms=app.config['JWT_ALGORITHM'])
 
 def verify_token():
     token = request.headers.get('Authorization', '')
@@ -51,8 +51,8 @@ def check_access(resource = None):
         def decorator_function(*args, **kwargs):
             # calling @jwt_required()
             payload = decode_token(verify_token())
+            app.logger.debug("Token is valid")
             if resource is None:
-                app.logger.error(str(request.url_rule).split('/')[1])
                 module = str(request.url_rule).split('/')[1]
             else:
                 module = resource
@@ -70,7 +70,6 @@ def check_access(resource = None):
             user = User.query.filter_by(username=payload['username']).first()
             app.logger.debug(user.roles)
             allowed_perm = False
-            app.logger.error("Entor2")
 
             for role in user.roles:
                 for perm in role.permissions:

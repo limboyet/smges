@@ -6,6 +6,8 @@ class Config(object):
     SERVER_PORT = 5000
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = "sqlite://"
+    LOG_LEVEL = "ERROR"
+    JWT_ALGORITHM = 'HS256'
 
     # Mysql database
     # DB_PORT = 3306
