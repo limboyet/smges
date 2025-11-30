@@ -68,7 +68,6 @@ def check_access(resource = None):
 
             app.logger.debug("check permission " + permission + " for module: " + module)
             user = User.query.filter_by(username=payload['username']).first()
-            app.logger.debug(user.roles)
             allowed_perm = False
 
             for role in user.roles:

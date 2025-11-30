@@ -12,10 +12,11 @@ db = SQLAlchemy()
 migrate = Migrate()
 
 # ---------------- Helper classes ----------------
-from sqlalchemy.ext.declarative import DeclarativeMeta
-import json
+# from sqlalchemy.ext.declarative import DeclarativeMeta
+# import json
 
 # ---------------- Database Models ----------------
+# ---------------- Relation tables ----------------
 class RolesUsers(db.Model):
     __tablename__ = 'roles_users'
     user_id = db.Column(db.String(20), db.ForeignKey('appuser.username'), primary_key=True)
@@ -26,6 +27,16 @@ class RolesPermissions(db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), primary_key=True)
     permission_id = db.Column(db.Integer, db.ForeignKey('permission.id'), primary_key=True)
 
+class InstrumentRental(db.Model):
+    __tablename__ = 'rental'
+    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    instrument_id = db.Column(db.Integer, db.ForeignKey('instrument.id'), primary_key=True)
+    contact_id = db.Column(db.Integer, db.ForeignKey('contact.id'), primary_key=True)
+    active = db.Column(db.Boolean(), nullable=False, default=True)
+    startdate = db.Column(db.DateTime(), nullable=False)
+    enddate = db.Column(db.DateTime())
+
+# ---------------- Resources tables ----------------
 class Session(db.Model):
     __tablename__ = 'session'
     id = db.Column(db.String(100), primary_key=True)
@@ -95,6 +106,8 @@ class Contact(db.Model):
     # Relationships
     # one-to-one
     user = db.relationship('User', uselist=False, back_populates='contact')
+    # one-to-many
+    rentals = db.relationship('Instrument', secondary=InstrumentRental.__table__, back_populates='rentals')
 
 class InstrumentType(db.Model):
     __tablename__ = 'instrumentType'
@@ -110,11 +123,5 @@ class Instrument(db.Model):
     active = db.Column(db.Boolean(), nullable=False, default=True)
     startdate = db.Column(db.DateTime(), nullable=False)
     enddate = db.Column(db.DateTime())
-    # Relationship with roles
-    roles = db.relationship('InstrumentRental', backref='Instrument', lazy=True, cascade='all, delete-orphan')
-
-class InstrumentRental(db.Model):
-    __tablename__ = 'rental'
-    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    instrument_id = db.Column(db.Integer, db.ForeignKey('instrument.id'), primary_key=True)
-    contact_id = db.Column(db.Integer, db.ForeignKey('contact.id'), primary_key=True)
+    # Relationship with InstrumentRental
+    rentals = db.relationship('Contact', secondary=InstrumentRental.__table__, back_populates='rentals')

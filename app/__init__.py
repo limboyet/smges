@@ -37,8 +37,11 @@ def create_app():
     migrate.init_app(app, db)
 
     with app.app_context():
-        init_db()
-        app.logger.debug("Inicialización completada")
+        try:
+            init_db()
+            app.logger.debug("Inicialización completada")
+        except Exception as e:
+            app.logger.error(e)
 
   # Registra manejadores de errores personalizados
     register_error_handlers(app)

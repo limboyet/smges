@@ -1,4 +1,4 @@
-from flask import request, Blueprint, jsonify, render_template
+from flask import request, Blueprint, jsonify, url_for
 from flask import current_app as app
 from sqlalchemy.sql import func
 
@@ -14,21 +14,27 @@ contact_bp = Blueprint('contact_bp', __name__)
 @contact_bp.route("/contact/<int:contact_id>/", methods=['GET'])
 @check_access(resource="auth")
 def get_contact(contact_id):
-    if contact_id is not None:
-        contacts = Contact.query.filter_by(id=contact_id).all()
-    else:
-        contacts = Contact.query.all()
+    try:
+        if contact_id is not None:
+            contacts = Contact.query.filter_by(id=contact_id).all()
+        else:
+            contacts = Contact.query.all()
 
-    output = {"msg": "List of contacts", "contacts": []}
-    for c in contacts:
-        tmpobject = { "id": c.id, "name": c.name, "surname1": c.surname1, "surname2": c.surname2}
-        if c.id_type is not None:
-            tmpobject['id_type'] = c.id_type
-        if c.id_number is not None:
-            tmpobject['id_number'] = c.id_number
-
-        output["contacts"].append(tmpobject)
-    return json.dumps(output)
+        output = {"msg": "List of contacts", "contacts": []}
+        for c in contacts:
+            new_contact = { "id": c.id, "name": c.name, "surname1": c.surname1, "surname2": c.surname2}
+            if c.id_type is not None:
+                new_contact['id_type'] = c.id_type
+            if c.id_number is not None:
+                new_contact['id_number'] = c.id_number
+            new_contact['uri'] = url_for('contact_bp.get_contact', contact_id=c.id, _external=True)
+            for r in c.rentals:
+                app.logger.debug("Rentals: " + str(r.id))
+            output["contacts"].append(new_contact)
+        return json.dumps(output)
+    except Exception as e:
+        app.logger.error(e)
+        raise e
 
 @contact_bp.route("/contact", methods=['POST'])
 @check_access(resource="auth")
