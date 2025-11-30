@@ -8,6 +8,7 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI = "sqlite://"
     LOG_LEVEL = "ERROR"
     JWT_ALGORITHM = 'HS256'
+    MAX_ITEMS_PER_PAGE = 100
 
     # Mysql database
     # DB_PORT = 3306

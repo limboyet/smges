@@ -16,9 +16,9 @@ contact_bp = Blueprint('contact_bp', __name__)
 def get_contact(contact_id):
     try:
         if contact_id is not None:
-            contacts = Contact.query.filter_by(id=contact_id).order_by(Contact.id.asc()).all()
+            contacts = db.paginate(Contact.query.filter_by(id=contact_id).order_by(Contact.id.asc()), max_per_page = app.config['MAX_ITEMS_PER_PAGE'])
         else:
-            contacts = Contact.query.order_by(Contact.id.asc()).all()
+            contacts = db.paginate(Contact.query.order_by(Contact.id.asc()), max_per_page = app.config['MAX_ITEMS_PER_PAGE'])
 
         output = {"msg": "List of contacts", "contacts": []}
         for c in contacts:

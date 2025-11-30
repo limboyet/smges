@@ -47,7 +47,7 @@ def auth_logout():
         session_id=payload['session_id']
         Session.query.filter_by(id=session_id).delete()
         db.session.commit()
-        app.logger.debug(str(request.url_rule) + ': User ' + username + 'session removed')
+        app.logger.debug(str(request.url_rule) + ': User ' + username + ' session removed')
         return jsonify({'message': 'Logged out successfully'}), 200
     except Exception as e:
         app.logger.error(e)
