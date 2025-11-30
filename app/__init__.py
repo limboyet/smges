@@ -1,6 +1,8 @@
 from flask import Flask, jsonify
+from sqlalchemy.sql import func
 from app.auth.resources import auth_bp
 from app.contact.resources import contact_bp
+from app.rental.resources import rental_bp
 from app.common.error_handling import *
 from app.common.config import Config
 from app.common.dbmodel import *
@@ -47,6 +49,7 @@ def create_app():
     register_error_handlers(app)
     app.register_blueprint(auth_bp)
     app.register_blueprint(contact_bp)
+    app.register_blueprint(rental_bp)
     logging.basicConfig(level=app.config['LOG_LEVEL'])
     logger = logging.getLogger(__name__)
 
@@ -120,4 +123,19 @@ def init_db():
     db.session.add(new_rpermission3)
     new_rpermission4 = RolesPermissions(role_id=1, permission_id=4)
     db.session.add(new_rpermission4)
+    db.session.commit()
+    new_contact = Contact(name='Enrique', surname1='Orejas', surname2='', email='admin@example.org')
+    db.session.add(new_contact)
+    db.session.commit()
+    new_instrument_type = InstrumentType(id='Clarinete')
+    db.session.add(new_instrument_type)
+    db.session.commit()
+    new_instrument = Instrument(type='Clarinete',startdate=func.now())
+    db.session.add(new_instrument)
+    db.session.commit()
+    new_rental = InstrumentRental(instrument_id=1, contact_id=2, startdate=func.now())
+    db.session.add(new_rental)
+    db.session.commit()
+    new_membressy = Member(contact_id=2,member_type=MemberTypeEnum.Full, startdate=func.now())
+    db.session.add(new_membressy)
     db.session.commit()

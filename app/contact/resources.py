@@ -16,9 +16,9 @@ contact_bp = Blueprint('contact_bp', __name__)
 def get_contact(contact_id):
     try:
         if contact_id is not None:
-            contacts = Contact.query.filter_by(id=contact_id).all()
+            contacts = Contact.query.filter_by(id=contact_id).order_by(Contact.id.asc()).all()
         else:
-            contacts = Contact.query.all()
+            contacts = Contact.query.order_by(Contact.id.asc()).all()
 
         output = {"msg": "List of contacts", "contacts": []}
         for c in contacts:
@@ -28,8 +28,18 @@ def get_contact(contact_id):
             if c.id_number is not None:
                 new_contact['id_number'] = c.id_number
             new_contact['uri'] = url_for('contact_bp.get_contact', contact_id=c.id, _external=True)
+            new_contact["rentals"] = []
+            new_contact["membressy"] = []
             for r in c.rentals:
-                app.logger.debug("Rentals: " + str(r.id))
+                new_rental = { "id": r.id, "active": r.active, "uri": url_for('rental_bp.get_rental', rental_id=r.id, _external=True) }
+                new_contact["rentals"].append(new_rental)
+            if len(new_contact["rentals"]) == 0:
+                new_contact.pop('rentals', None)
+            for m in c.membressy:
+                new_membressy = { "id": m.id, "type": m.member_type.value[1], "active": m.active, "uri": "tobedetermined" }
+                new_contact["membressy"].append(new_membressy)
+            if len(new_contact["membressy"]) == 0:
+                new_contact.pop('membressy', None)
             output["contacts"].append(new_contact)
         return json.dumps(output)
     except Exception as e:
@@ -37,8 +47,9 @@ def get_contact(contact_id):
         raise e
 
 @contact_bp.route("/contact", methods=['POST'])
-@check_access(resource="auth")
+@check_access()
 def post_contact():
+    # new_contact = "uri": url_for('rental_bp.get_rental', rental_id=r.id, _external=True) }
     return jsonify({'message': 'Logged out successfully'}), 200
 
 @contact_bp.route("/contact/<int:contact_id>", methods=['PUT'])

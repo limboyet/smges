@@ -1,8 +1,8 @@
 """Initial model
 
-Revision ID: a42b90a160de
+Revision ID: a36f62fe062c
 Revises: 
-Create Date: 2025-11-18 08:37:05.476180
+Create Date: 2025-11-30 08:20:49.598232
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'a42b90a160de'
+revision = 'a36f62fe062c'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -26,6 +26,10 @@ def upgrade():
     sa.Column('email', sa.String(length=255), nullable=True),
     sa.Column('id_type', sa.String(length=50), nullable=True),
     sa.Column('id_number', sa.String(length=50), nullable=True),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('contract',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('instrumentType',
@@ -50,6 +54,7 @@ def upgrade():
     sa.Column('username', sa.String(length=20), nullable=False),
     sa.Column('password', sa.String(length=255), server_default='', nullable=False),
     sa.Column('active', sa.Boolean(), nullable=False),
+    sa.Column('is_admin', sa.Boolean(), nullable=False),
     sa.Column('contact_id', sa.Integer(), nullable=False),
     sa.Column('fs_uniquifier', sa.String(length=255), nullable=False),
     sa.ForeignKeyConstraint(['contact_id'], ['contact.id'], ),
@@ -68,6 +73,18 @@ def upgrade():
     sa.ForeignKeyConstraint(['type'], ['instrumentType.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('membressy',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('contact_id', sa.Integer(), nullable=True),
+    sa.Column('member_type', sa.Enum('Full', 'Artistic', name='membertypeenum'), nullable=True),
+    sa.Column('active', sa.Boolean(), nullable=False),
+    sa.Column('startdate', sa.DateTime(), nullable=False),
+    sa.Column('enddate', sa.DateTime(), nullable=True),
+    sa.Column('member_contract', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['contact_id'], ['contact.id'], ),
+    sa.ForeignKeyConstraint(['member_contract'], ['contract.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
     op.create_table('roles_permissions',
     sa.Column('role_id', sa.Integer(), nullable=False),
     sa.Column('permission_id', sa.Integer(), nullable=False),
@@ -77,11 +94,14 @@ def upgrade():
     )
     op.create_table('rental',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('instrument_id', sa.Integer(), nullable=False),
-    sa.Column('contact_id', sa.Integer(), nullable=False),
+    sa.Column('instrument_id', sa.Integer(), nullable=True),
+    sa.Column('contact_id', sa.Integer(), nullable=True),
+    sa.Column('active', sa.Boolean(), nullable=False),
+    sa.Column('startdate', sa.DateTime(), nullable=False),
+    sa.Column('enddate', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['contact_id'], ['contact.id'], ),
     sa.ForeignKeyConstraint(['instrument_id'], ['instrument.id'], ),
-    sa.PrimaryKeyConstraint('id', 'instrument_id', 'contact_id')
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('roles_users',
     sa.Column('user_id', sa.String(length=20), nullable=False),
@@ -107,10 +127,12 @@ def downgrade():
     op.drop_table('roles_users')
     op.drop_table('rental')
     op.drop_table('roles_permissions')
+    op.drop_table('membressy')
     op.drop_table('instrument')
     op.drop_table('appuser')
     op.drop_table('role')
     op.drop_table('permission')
     op.drop_table('instrumentType')
+    op.drop_table('contract')
     op.drop_table('contact')
     # ### end Alembic commands ###

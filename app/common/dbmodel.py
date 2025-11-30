@@ -27,15 +27,6 @@ class RolesPermissions(db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), primary_key=True)
     permission_id = db.Column(db.Integer, db.ForeignKey('permission.id'), primary_key=True)
 
-class InstrumentRental(db.Model):
-    __tablename__ = 'rental'
-    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    instrument_id = db.Column(db.Integer, db.ForeignKey('instrument.id'), primary_key=True)
-    contact_id = db.Column(db.Integer, db.ForeignKey('contact.id'), primary_key=True)
-    active = db.Column(db.Boolean(), nullable=False, default=True)
-    startdate = db.Column(db.DateTime(), nullable=False)
-    enddate = db.Column(db.DateTime())
-
 # ---------------- Resources tables ----------------
 class Session(db.Model):
     __tablename__ = 'session'
@@ -102,12 +93,16 @@ class Contact(db.Model):
     email = db.Column(db.String(255))
     id_type = db.Column(db.String(50))
     id_number = db.Column(db.String(50))
+    UniqueConstraint(id_type, id_number, name="contact_constraint_01")
 
     # Relationships
     # one-to-one
     user = db.relationship('User', uselist=False, back_populates='contact')
     # one-to-many
-    rentals = db.relationship('Instrument', secondary=InstrumentRental.__table__, back_populates='rentals')
+    rentals = db.relationship('InstrumentRental', back_populates='contact')
+    membressy = db.relationship('Member', back_populates='contact')
+    # many-to-many
+    # rentals = db.relationship('Instrument', secondary=InstrumentRental.__table__, back_populates='rentals')
 
 class InstrumentType(db.Model):
     __tablename__ = 'instrumentType'
@@ -123,5 +118,43 @@ class Instrument(db.Model):
     active = db.Column(db.Boolean(), nullable=False, default=True)
     startdate = db.Column(db.DateTime(), nullable=False)
     enddate = db.Column(db.DateTime())
-    # Relationship with InstrumentRental
-    rentals = db.relationship('Contact', secondary=InstrumentRental.__table__, back_populates='rentals')
+
+    # one-to-many
+    rentals = db.relationship('InstrumentRental', back_populates='instrument')
+
+class InstrumentRental(db.Model):
+    __tablename__ = 'rental'
+    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    instrument_id = db.Column(db.Integer, db.ForeignKey('instrument.id'))
+    contact_id = db.Column(db.Integer, db.ForeignKey('contact.id'))
+    active = db.Column(db.Boolean(), nullable=False, default=True)
+    startdate = db.Column(db.DateTime(), nullable=False)
+    enddate = db.Column(db.DateTime())
+
+    # Relationships
+    # one-to-one
+    contact = db.relationship('Contact', back_populates='rentals')
+    # many-to-one
+    instrument = db.relationship('Instrument', back_populates='rentals')    
+
+class Contract(db.Model):
+    __tablename__ = 'contract'
+    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+
+class MemberTypeEnum(Enum):
+    Full = "F", "Full Member"
+    Artistic = "A", "Artistic"
+
+class Member(db.Model):
+    __tablename__ = 'membressy'
+    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    contact_id = db.Column(db.Integer, db.ForeignKey('contact.id'))
+    member_type = db.Column(db.Enum(MemberTypeEnum))
+    active = db.Column(db.Boolean(), nullable=False, default=True)
+    startdate = db.Column(db.DateTime(), nullable=False)
+    enddate = db.Column(db.DateTime())
+    member_contract = db.Column(db.Integer, db.ForeignKey('contract.id'))
+
+    # Relationships
+    # one-to-many
+    contact = db.relationship('Contact', back_populates='membressy')
