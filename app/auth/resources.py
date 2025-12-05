@@ -3,7 +3,7 @@ from flask import current_app as app
 from sqlalchemy.sql import func, and_, or_
 
 from app.common.functions import verify_token, decode_token
-from app.common.error_handling import InvalidLogin,NoAuthorizationError
+from app.common.error_handling import InvalidLogin,NoAuthorizationError, BadObjectRequest
 from app.common.dbmodel import User,Session,db
 import jwt
 import secrets
@@ -84,10 +84,12 @@ def auth_sessions(session_id):
 @auth_bp.route("/auth/session/<string:session_id>/", methods=['DELETE'])
 def auth_delete_session(session_id):
     try:
+        if session_id is None:
+            msg = f"Session id cannot be null"
+            raise BadObjectRequest(msg)
         token = verify_token()
         payload = decode_token(token)
         username=payload['username']
-        app.logger.debug(str(request.url_rule) + ': Start user ' + username + ' session query with valid token')
         user = User.query.filter_by(username=username).first()
         session = Session.query.filter_by(id=session_id).first()
         if user.is_admin or session.user_id == username:

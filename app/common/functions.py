@@ -66,7 +66,7 @@ def check_access(resource = None):
                 case "DELETE":
                     permission = PermissionEnum.Delete.value[0]
 
-            app.logger.debug("check permission " + permission + " for module: " + module)
+            # app.logger.debug("check permission " + permission + " for module: " + module)
             user = User.query.filter_by(username=payload['username']).first()
             allowed_perm = False
 

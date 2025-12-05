@@ -3,7 +3,7 @@ from flask import current_app as app
 from sqlalchemy.sql import func
 
 from app.common.functions import check_access
-from app.common.error_handling import InvalidLogin
+from app.common.error_handling import ObjectNotFound, BadObjectRequest
 from app.common.dbmodel import db, Contact, InstrumentRental, User
 import json
 import logging
@@ -12,7 +12,7 @@ contact_bp = Blueprint('contact_bp', __name__)
 
 @contact_bp.route("/contact", methods=['GET'], defaults={'contact_id': None})
 @contact_bp.route("/contact/<int:contact_id>/", methods=['GET'])
-@check_access(resource="auth")
+@check_access()
 def get_contact(contact_id):
     try:
         if contact_id is not None:
@@ -50,7 +50,21 @@ def get_contact(contact_id):
 @check_access()
 def post_contact():
     # new_contact = "uri": url_for('rental_bp.get_rental', rental_id=r.id, _external=True) }
-    return jsonify({'message': 'Logged out successfully'}), 200
+    try:
+        name = request.json.get('name')
+        surname1 = request.json.get('surname1')
+        surname2 = request.json.get('surname2')
+        email = request.json.get('email')
+        id_type = request.json.get('id_type')
+        id_number = request.json.get('id_number')
+        new_contact = Contact(name=name, surname1=surname1, surname2=surname2, email=email, id_type=id_type,id_number=id_number )
+        db.session.add(new_contact)
+        db.session.commit()
+
+        return jsonify({'message': 'Logged out successfully'}), 200
+    except Exception as e:
+        app.logger.error(e)
+        raise e
 
 @contact_bp.route("/contact/<int:contact_id>", methods=['PUT'])
 @check_access(resource="auth")
@@ -65,7 +79,20 @@ def patch_contact(contact_id):
 @contact_bp.route("/contact/<int:contact_id>", methods=['DELETE'])
 @check_access(resource="auth")
 def delete_contact(contact_id):
-    return jsonify({'message': 'Logged out successfully'}), 200
+    try:
+        contact = Contact.query.filter_by(id=contact_id)
+        if contact.count() < 1:
+            raise ObjectNotFound("Contact " + str(contact_id) + " not found")
+        if contact.count() > 1:
+            raise BadObjectRequest("Too many contacts")
+        
+        contact.delete()
+        db.session.commit()
+        app.logger.debug(str(request.url_rule) + ': Contact ' + str(contact_id) + ' deleted')
+        return jsonify({'message': 'Contact ' + str(contact_id) + ' deleted'}), 200
+    except Exception as e:
+        app.logger.error(e)
+        raise e
 
 @contact_bp.route("/contact/<int:contact_id>/rentals", methods=['GET'])
 @check_access(resource="rentals")
