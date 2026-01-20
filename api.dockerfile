@@ -4,7 +4,7 @@ FROM python:3.15-rc-alpine
 RUN pip install --upgrade pip
 
 # get curl for healthchecks
-RUN apk add --no-cache curl bash mariadb-client mariadb-connector-c-dev gcc musl-dev libpq-dev
+RUN apk add --no-cache curl bash mariadb-client mariadb-connector-c-dev gcc g++ musl-dev libpq-dev
 
 # permissions and nonroot user for tightened security
 RUN adduser -D nonroot

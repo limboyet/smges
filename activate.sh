@@ -10,10 +10,11 @@ export FLASK_DB_NAME="smges"
 export FLASK_DB_USER="smges"
 export FLASK_DB_PASS="smges"
 #export FLASK_SESSION_TIMEOUT=900
+export FLASK_DEBUG="True"
+export FLASK_SECRET_KEY="SX65lpPefu5gr3Z5dYR-JkJMpX1Bsh1Ecf6kGJdMOUURymkuJ-rxRcjaPTXQaL9brfUV-pIuesCGyyRlBTM2gA"
 
 # Initialize flask migrate
-# flask db init 
-# flask db migrate -m "Initial model"
+flask db init 
+flask db migrate -m "Initial model"
 flask db upgrade
 python3 entrypoint.py
-
